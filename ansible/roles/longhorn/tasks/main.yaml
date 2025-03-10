@@ -1,0 +1,14 @@
+- name: Copy Longhorn manifest to remote
+  ansible.builtin.copy:
+    src: longhorn.yaml
+    dest: /tmp/longhorn.yaml
+  tags:
+    - longhorn
+    - storage
+
+- name: Deploy Longhorn
+  ansible.builtin.command:
+    cmd: sudo kubectl --kubeconfig /etc/kubernetes/admin.conf apply -f /tmp/longhorn.yaml
+  tags:
+    - longhorn
+    - storage

@@ -1,0 +1,22 @@
+- hosts: all
+  become: true
+  roles:
+    - base_setup
+    - containerd
+
+- hosts: control
+  become: true
+  roles:
+    - ha
+    - kubeadm
+
+- hosts: worker
+  become: true
+  roles:
+    - kubeadm
+
+- hosts: control[0]
+  become: true
+  roles:
+    - calico
+    - longhorn

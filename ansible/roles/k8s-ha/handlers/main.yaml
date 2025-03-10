@@ -1,0 +1,9 @@
+- name: systemd-modules-load
+  ansible.builtin.systemd_service:
+    name: systemd-modules-load
+    state: restarted
+
+- name: keepalived
+  ansible.builtin.systemd_service:
+    name: keepalived
+    state: restarted

@@ -1,0 +1,12 @@
+- name: Control plane
+  ansible.builtin.include_tasks: control.yaml
+  when: "'control' in group_names"
+  tags:
+    - control
+    - k8s_config
+
+- name: Workers
+  ansible.builtin.include_tasks: worker.yaml
+  when: "'worker' in group_names"
+  tags:
+    - worker

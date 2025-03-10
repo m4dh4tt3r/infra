@@ -1,0 +1,74 @@
+- name: Install and Configure Keepalived and IPVS for Kubernetes HA
+  block:
+    - name: Install Keepalived and IPVS packages
+      ansible.builtin.package:
+        name:
+          - keepalived
+          - conntrack
+          - ipvsadm
+          - ipset
+        state: present
+        update_cache: true
+
+    - name: Load IPVS kernel modules
+      ansible.builtin.command: "modprobe {{ item }}"
+      with_items:
+        - ip_vs
+        - ip_vs_rr
+        - ip_vs_wrr
+        - ip_vs_sh
+        - nf_conntrack
+
+    - name: Ensure modules-load.d directory exists
+      ansible.builtin.file:
+        path: /etc/modules-load.d
+        state: directory
+        mode: '0755'
+
+    - name: Save IPVS persistent kernel modules
+      ansible.builtin.lineinfile:
+        path: /etc/modules-load.d/ipvs.conf
+        line: "{{ item }}"
+        state: present
+        create: true
+        mode: '0644'
+        owner: root
+        group: root
+      with_items:
+        - ip_vs
+        - ip_vs_rr
+        - ip_vs_wrr
+        - ip_vs_sh
+        - nf_conntrack
+      notify: systemd-modules-load
+
+    - name: Install IPVS rules
+      ansible.builtin.template:
+        src: ipvsadm.rules.j2
+        dest: /etc/ipvsadm.rules
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Enable IPVS in /etc/default
+      ansible.builtin.template:
+        src: ipvsadm.j2
+        dest: /etc/default/ipvsadm
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Configure keepalived
+      ansible.builtin.template:
+        src: keepalived.conf.j2
+        dest: /etc/keepalived/keepalived.conf
+        owner: root
+        group: root
+        mode: '0644'
+      notify: keepalived
+
+    - name: Restart keepalived
+      ansible.builtin.service:
+        name: keepalived
+        state: started
+        enabled: true

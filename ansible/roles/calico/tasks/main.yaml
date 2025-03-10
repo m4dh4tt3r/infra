@@ -1,0 +1,35 @@
+# - name: Copy Calico manifest to remote
+#   ansible.builtin.copy:
+#     src: calico.yaml
+#     dest: /tmp/calico.yaml
+#   tags:
+#     - calico
+#     - cni
+
+# - name: Delete previous calico resources
+#   ansible.builtin.command:
+#     cmd: sudo kubectl --kubeconfig /etc/kubernetes/admin.conf delete -f /tmp/calico.yaml
+#   tags:
+#     - calico
+#     - cni
+
+- name: Copy Calico manifests to remote
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/tmp/{{ item }}"
+  with_items:
+    - tigera-operator.yaml
+    - custom-resources.yaml
+  tags:
+    - calico
+    - cni
+
+- name: Create Calico manifests
+  ansible.builtin.command:
+    cmd: "sudo kubectl --kubeconfig /etc/kubernetes/admin.conf create -f /tmp/{{ item }}"
+  with_items:
+    - tigera-operator.yaml
+    - custom-resources.yaml
+  tags:
+    - calico
+    - cni

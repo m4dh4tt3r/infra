@@ -1,0 +1,110 @@
+- name: Initialize Kubernetes cluster
+  block:
+    - name: Initialize Kubernetes control plane
+      ansible.builtin.command: |
+        kubeadm init --kubernetes-version "{{ k8s_version }}" \
+          --control-plane-endpoint "{{ k8s_vip }}:6443" \
+          --apiserver-advertise-address "{{ ansible_default_ipv4.address }}" \
+          --upload-certs \
+          --pod-network-cidr "{{ pod_cidr }}" \
+          --service-cidr "{{ svc_cidr }}"
+      register: kubeadm_init
+      when: inventory_hostname == "control1"
+      failed_when: '"The API server is not healthy after 4m" in kubeadm_init.stdout'
+      tags:
+        - control
+
+    - debug:
+        msg: "{{ kubeadm_init.stdout }}"
+      when: inventory_hostname == "control1"
+      tags:
+        - control
+
+    - name: Archive Kubernetes config on initial control node
+      ansible.builtin.command:
+        cmd: tar -czf /tmp/k8s.tgz -C /etc/kubernetes ./pki/ca.key ./pki/ca.crt ./pki/sa.key ./pki/sa.pub ./pki/front-proxy-ca.key ./pki/front-proxy-ca.crt ./pki/etcd/ca.key ./pki/etcd/ca.crt
+      args:
+        creates: /tmp/k8s.tgz
+      when: inventory_hostname == "control1"
+      tags:
+        - k8s_config
+        - control
+
+    - name: Fetch Kubernetes config archive from remote
+      ansible.builtin.fetch:
+        src: /tmp/k8s.tgz
+        dest: /tmp/
+        flat: yes
+      when: inventory_hostname == "control1"
+      tags:
+        - k8s_config
+        - control
+
+    - name: Unarchive Kubernetes config on other control nodes
+      ansible.builtin.unarchive:
+        src: /tmp/k8s.tgz
+        dest: /etc/kubernetes
+      when: inventory_hostname in groups['control'][1:]
+      tags:
+        - k8s_config
+        - control
+
+    - name: Ensure kubelet config does not exist on the other control nodes
+      ansible.builtin.file:
+        path: /etc/kubernetes/kubelet.conf
+        state: absent
+      when: inventory_hostname in groups['control'][1:]
+
+    - name: Get the join command from the first control plane node
+      ansible.builtin.command: "kubeadm token create --print-join-command"
+      delegate_to: "{{ groups['control'][0] }}"
+      register: join_command
+      tags:
+        - control
+
+    - debug:
+        msg: "{{ join_command.stdout }}"
+      tags:
+        - control
+
+    - name: Join control plane nodes to the cluster
+      ansible.builtin.command: "{{ join_command.stdout }} --control-plane"
+      when: inventory_hostname in groups['control'][1:]
+      tags:
+        - control
+
+    - name: Ensure Kubernetes config dir exists
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      tags:
+        - control
+
+    - name: Copy admin config to local user config
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: '0755'
+      tags:
+        - control
+
+- name: Bootstrap cluster with flannel
+  block:
+    - name: Upload Flannel manifest
+      ansible.builtin.template:
+        src: kube-flannel.yaml.j2
+        dest: /tmp/kube-flannel.yaml
+      tags:
+        - control
+
+    - name: Apply Flannel manifest
+      ansible.builtin.command:
+        cmd: kubectl apply -f /tmp/kube-flannel.yaml
+      tags:
+        - control

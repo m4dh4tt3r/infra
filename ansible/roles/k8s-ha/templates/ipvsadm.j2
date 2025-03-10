@@ -1,0 +1,14 @@
+# ipvsadm
+
+# if you want to start ipvsadm on boot set this to true
+AUTO="true"
+
+# daemon method (none|master|backup)
+DAEMON="master"
+
+# use interface (eth0,eth1...)
+IFACE="{{ eth_iface }}"	
+
+# syncid to use 
+# (0 means no filtering of syncids happen, that is the default)
+# SYNCID="0"
