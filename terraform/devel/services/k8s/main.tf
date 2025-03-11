@@ -18,3 +18,7 @@ terraform {
     }
   }
 }
+
+provider "libvirt" {
+  uri = "qemu+ssh://kvm01.wonderland.local:53330/system"
+}
