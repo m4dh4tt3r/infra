@@ -53,10 +53,16 @@ resource "libvirt_domain" "k8s_ctlr" {
 resource "libvirt_cloudinit_disk" "k8s_wrkr_init" {
   count = length(var.k8s_wrkr_name)
   name  = "${var.k8s_wrkr_name[count.index]}-init.iso"
+
   user_data = templatefile("${path.module}/cloud_init.cfg", {
     hostname = var.k8s_wrkr_name[count.index]
     fqdm     = "${var.k8s_wrkr_name[count.index]}.${var.domain}"
   })
+
+  meta_data = templatefile("${path.module}/meta_data.cfg", {
+    hostname = var.k8s_wrkr_name[count.index]
+  })
+
   network_config = templatefile("${path.module}/network_config.cfg", {
     interface = var.interface
     ip_addr   = var.k8s_wrkr_ips[count.index]

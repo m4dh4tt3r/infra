@@ -1,0 +1,33 @@
+all:
+  vars:
+    k8s_version: "v1.31.2"
+    k8s_release: "v1.31"
+    k8s_vip: "172.30.5.170"
+    pod_cidr: "192.168.0.0/16"
+    svc_cidr: "10.23.0.0/16"
+    eth_iface: "enp6s18"
+  children:
+    control:
+      hosts:
+        control1:
+          ansible_host: 172.30.5.171
+        control2:
+          ansible_host: 172.30.5.172
+        control3:
+          ansible_host: 172.30.5.173
+    worker:
+      hosts:
+        worker0:
+          ansible_host: 172.30.5.180
+        worker1:
+          ansible_host: 172.30.5.181
+        worker2:
+          ansible_host: 172.30.5.182
+        worker3:
+          ansible_host: 172.30.5.183
+        worker4:
+          ansible_host: 172.30.5.184
+        worker5:
+          ansible_host: 172.30.5.185
+        worker6:
+          ansible_host: 172.30.5.186
