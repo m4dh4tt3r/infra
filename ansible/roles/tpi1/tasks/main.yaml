@@ -1,0 +1,59 @@
+---
+- name: Install /etc/hosts
+  ansible.builtin.template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - tpi1-setup
+
+- name: Install systemd-resolved config file
+  ansible.builtin.template:
+    src: resolved.j2
+    dest: /etc/systemd/resolved.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: systemd-resolved
+  tags:
+    - tpi1-setup
+
+- name: Install desired packages
+  ansible.builtin.apt:
+    name:
+      - containerd
+      - docker.io
+      - jq
+      - dnsutils
+      - systemd-resolved
+      - kubernetes-client
+      - kubectx
+    state: present
+  tags:
+    - tpi1-setup
+
+- name: Remove unneeded packages
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - nfs-common
+      - x11*
+      - libxcb*
+      - gnome*
+      - libx11*
+      - nano
+      - libxau6
+      - wireless*
+      - wpasupplicant
+      - xdg-user-dirs
+      - xkbd-data
+      - xauth
+      - '*v4l*'
+      - triggerhappy
+    state: absent
+    autoremove: true
+    purge: true
+  tags:
+    - tpi1-setup

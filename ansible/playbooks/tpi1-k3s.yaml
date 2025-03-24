@@ -1,0 +1,5 @@
+- hosts: tpi1
+  become: true
+  roles:
+    - tpi1
+    - k3s

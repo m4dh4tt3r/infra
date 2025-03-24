@@ -1,0 +1,27 @@
+tpi1:
+  vars:
+    ansible_user: m4dh4tt3r
+    ansible_become: true
+    ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+    k3s_version: "v1.31.2"
+    pod_cidr: "192.168.0.0/16"
+    vip_cidr: "10.17.0.0/16"
+  children:
+    controllers:
+      hosts:
+        controller0:
+          ansible_host: 10.0.0.60
+    workers:
+      hosts:
+        worker1:
+          ansible_host: 10.0.0.61
+        worker2:
+          ansible_host: 10.0.0.62
+        worker3:
+          ansible_host: 10.0.0.63
+        worker4:
+          ansible_host: 10.0.0.64
+        worker5:
+          ansible_host: 10.0.0.65
+        worker6:
+          ansible_host: 10.0.0.66
