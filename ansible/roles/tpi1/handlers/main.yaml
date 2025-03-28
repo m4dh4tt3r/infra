@@ -2,5 +2,5 @@
 - name: systemd-resolved
   ansible.builtin.systemd:
     name: systemd-resolved
-    state: restart
+    state: restarted
     daemon-reload: true
