@@ -36,6 +36,7 @@
 - name: Install desired packages
   ansible.builtin.apt:
     name:
+      - i2c-tools
       - containerd
       - docker.io
       - jq

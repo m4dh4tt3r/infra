@@ -1,0 +1,10 @@
+---
+- name: Join Worker Nodes to K3s Cluster
+  ansible.builtin.command: sudo K3S_URL=https://{{ hostvars['controller0']['ansible_host'] }}:6443 K3S_TOKEN={{ hostvars['controller0']['k3s_node_token'] }} /usr/local/bin/install-k3s.sh
+  args:
+    creates: /etc/rancher/k3s/k3s.yaml
+  when: install
+  tags:
+    - install
+    - k3s
+    - worker

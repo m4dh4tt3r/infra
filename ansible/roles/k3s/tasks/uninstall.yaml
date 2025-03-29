@@ -1,0 +1,16 @@
+---
+- name: Uninstall K3s Controller Nodes
+  ansible.builtin.command: sudo /usr/local/bin/k3s-uninstall.sh
+  when: not install
+  tags:
+    - uninstall
+    - k3s
+    - controller
+
+- name: Uninstall K3s Worker Nodes
+  ansible.builtin.command: sudo /usr/local/bin/k3s-agent-uninstall.sh
+  when: not install
+  tags:
+    - uninstall
+    - k3s
+    - worker

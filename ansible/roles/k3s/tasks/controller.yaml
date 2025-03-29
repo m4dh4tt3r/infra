@@ -1,0 +1,74 @@
+---
+- name: Create k3s.service.d directory
+  ansible.builtin.file:
+    path: /etc/systemd/system/k3s.service.d
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Place K3s overrides
+  ansible.builtin.template:
+    src: override.conf.j2
+    dest: /etc/systemd/system/k3s.service.d/override.conf
+    owner: root
+    group: root
+    mode: '0644'
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Run K3s Installer
+  ansible.builtin.command: /usr/local/bin/install-k3s.sh
+  args:
+    creates: /etc/rancher/k3s/k3s.yaml
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Wait for K3s node token to be created
+  ansible.builtin.wait_for:
+    path: "{{ k3s_server_token_path }}"
+    timeout: 30
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Fetch K3s Token
+  ansible.builtin.slurp:
+    src: "{{ k3s_server_token_path }}"
+  register: k3s_node_token
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Print K3s Token
+  ansible.builtin.debug:
+    msg: "{{ k3s_node_token['content'] | b64decode | trim }}"
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
+
+- name: Save K3s Token for Workers
+  ansible.builtin.set_fact:
+    k3s_node_token: "{{ k3s_node_token['content'] | b64decode | trim }}"
+  when: install
+  tags:
+    - install
+    - k3s
+    - controller
