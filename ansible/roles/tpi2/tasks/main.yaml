@@ -12,6 +12,86 @@
   tags:
     - tpi2-setup
 
+- name: Partition, format, and mount SSDs
+  block:
+    - name: Check if NVMe device exists
+      ansible.builtin.stat:
+        path: "{{ nvme_device }}"
+      register: nvme_stat
+
+    - name: Fail if NVMe device is not found
+      ansible.builtin.fail:
+        msg: "NVMe device {{ nvme_device }} not found!"
+      when: not nvme_stat.stat.exists
+
+    - name: Check if the partition already exists
+      ansible.builtin.set_fact:
+        partition_exists: "{{ 'nvme0n1p1' in ansible_facts.devices.mvme0n1.partitions | default({}) }}"
+
+    - name: Create GPT partition table
+      ansible.builtin.command: "parted -s {{ nvme_device }} mklabel gpt"
+      when: 
+        - nvme_stat.stat.exists
+        - not partition_exists
+        - ansible_mounts | selectattr('mount', 'equalto', '/mnt/nvme') | list | length == 0
+
+    - name: Create a single partition
+      ansible.builtin.command: "parted -s {{ nvme_device }} mkpart primary {{ file_system_type }} 0% 100%"
+      when: 
+        - nvme_stat.stat.exists
+        - not partition_exists
+        - ansible_mounts | selectattr('mount', 'equalto', '/mnt/nvme') | list | length == 0
+
+    - name: Wait for partition to be recognized
+      ansible.builtin.pause:
+        seconds: 5
+
+    - name: Check if the filesystem is already formatted
+      ansible.builtin.command: "blkid -o value -s TYPE {{ nvme_device }}p{{ partition_number }}"
+      register: fs_check
+      failed_when: false
+      changed_when: false
+
+    - name: Format the partition
+      ansible.builtin.filesystem:
+        fstype: "{{ file_system_type }}"
+        dev: "{{ nvme_device }}p{{ partition_number }}"
+
+    - name: Ensure mount point exists
+      ansible.builtin.file:
+        path: "{{ mount_point }}"
+        state: directory
+        mode: '0755'
+
+    - name: Check if partition is already in /etc/fstab
+      ansible.builtin.command: grep -qs "/mnt/nvme" /etc/fstab
+      register: fstab_check
+      changed_when: false
+      failed_when: false
+
+    - name: Get UUID of the partition
+      ansible.builtin.command: "blkid -o value -s UUID {{ nvme_device }}p{{ partition_number }}"
+      register: nvme_uuid
+      changed_when: false
+
+    - name: Persist mount in /etc/fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        line: "UUID={{ nvme_uuid.stdout }} {{ mount_point }} {{ file_system_type }} defaults 0 2"
+        state: present
+      when: fstab_check.rc != 0
+
+    - name: Mount the partition
+      ansible.builtin.mount:
+        path: "{{ mount_point }}"
+        src: "{{ nvme_device }}p{{ partition_number }}"
+        fstype: "{{ file_system_type }}"
+        state: mounted
+  tags:
+    - tpi2-setup
+    - ssd
+    - disk
+      
 - name: Install /etc/hosts
   ansible.builtin.template:
     src: hosts.j2

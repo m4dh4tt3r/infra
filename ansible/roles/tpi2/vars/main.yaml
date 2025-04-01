@@ -1,0 +1,5 @@
+nvme_device: "/dev/nvme0n1"
+nvme_name: "nvme0n1"
+mount_point: "/mnt/nvme"
+file_system_type: "ext4"
+partition_number: "1"
