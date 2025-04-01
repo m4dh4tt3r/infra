@@ -1,0 +1,4 @@
+- hosts: tpi2
+  become: true
+  roles:
+    - tpi2

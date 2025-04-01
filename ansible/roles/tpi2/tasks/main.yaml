@@ -1,0 +1,96 @@
+---
+- name: Update system
+  ansible.builtin.apt:
+    update_cache: yes
+    upgrade: dist
+  tags:
+    - tpi2-setup
+
+- name: Reboot node
+  ansible.builtin.reboot:
+      reboot_timeout: 600
+  tags:
+    - tpi2-setup
+
+- name: Install /etc/hosts
+  ansible.builtin.template:
+    src: hosts.j2
+    dest: /etc/hosts
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - tpi2-setup
+
+- name: Install systemd-resolved config file
+  ansible.builtin.template:
+    src: resolved.j2
+    dest: /etc/systemd/resolved.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: systemd-resolved
+  tags:
+    - tpi2-setup
+
+- name: Install desired packages
+  ansible.builtin.apt:
+    name:
+      - virt-manager
+      - qemu
+      - qemu-system-arm
+      - qemu-efi
+      - libvirt-daemon-system
+      - libvirt-clients
+      - virtinst
+      - bridge-utils
+      - cloud-image-utils
+      - chrony
+    state: present
+  tags:
+    - tpi2-setup
+    - packages
+
+- name: Remove unneeded packages
+  ansible.builtin.apt:
+    name:
+      - unattended-upgrades
+      - nfs-common
+      - gnome*
+      - nano
+      - wireless*
+      - wpasupplicant
+      - xdg-user-dirs
+      - xkbd-data
+      - xauth
+      - '*v4l*'
+      - triggerhappy
+    state: absent
+    autoremove: true
+    purge: true
+  tags:
+    - tpi2-setup
+    - packages
+
+- name: Ensure libvirtd service is enabled and running
+  ansible.builtin.systemd:
+    name: libvirtd
+    enabled: yes
+    state: started
+  tags:
+    - tpi2-setup
+
+- name: Add user to libvirt and kvm groups
+  ansible.builtin.user:
+    name: "{{ ansible_user_id }}"
+    groups: libvirt,kvm
+    append: yes
+  tags:
+    - tpi2-setup
+
+- name: Restart libvirtd service to apply changes
+  ansible.builtin.systemd:
+    name: libvirtd
+    state: restarted
+  tags:
+    - tpi2-setup
