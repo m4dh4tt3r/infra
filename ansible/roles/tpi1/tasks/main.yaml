@@ -5,12 +5,14 @@
     upgrade: dist
   tags:
     - tpi1-setup
+    - upgrade
 
 - name: Reboot node
   ansible.builtin.reboot:
       reboot_timeout: 600
   tags:
     - tpi1-setup
+    - reboot
 
 - name: Install /etc/hosts
   ansible.builtin.template:
@@ -21,6 +23,7 @@
     mode: '0644'
   tags:
     - tpi1-setup
+    - hosts
 
 - name: Install systemd-resolved config file
   ansible.builtin.template:
@@ -32,6 +35,57 @@
   notify: systemd-resolved
   tags:
     - tpi1-setup
+    - resolved
+
+- name: Stop and disable NetworkManager
+  ansible.builtin.systemd_service:
+    name: NetworkManager
+    state: stopped
+    enabled: false
+  failed_when: false
+  tags:
+    - tpi1-setup
+    - network-manager
+
+- name: Purge NetworkManager
+  ansible.builtin.apt:
+    name: network-manager
+    purge: true
+    state: absent
+  tags:
+    - tpi1-setup
+    - network-manager
+
+- name: Enable and start systemd-networkd
+  ansible.builtin.systemd_service:
+    name: systemd-networkd
+    state: started
+    enabled: true
+  tags:
+    - tpi1-setup
+
+- name: Configure interface eth0 for DHCP
+  ansible.builtin.template:
+    src: eth0.network.j2
+    dest: /etc/systemd/network/eth0.network
+    owner: root
+    group: root
+    mode: '0644'
+  tags:
+    - tpi1-setup
+
+- name: Restart systemd-networkd
+  ansible.builtin.systemd_service:
+    name: systemd-networkd
+    state: restarted
+  tags:
+    - tpi1-setup
+
+- name: Prevent installation of NetworkManager
+  ansible.builtin.command: apt-mark hold network-manager
+  tags:
+    - tpi1-setup
+    - network-manager
 
 - name: Install desired packages
   ansible.builtin.apt:
@@ -44,9 +98,12 @@
       - systemd-resolved
       - kubernetes-client
       - kubectx
+      - chrony
+      - cloud-init
     state: present
   tags:
     - tpi1-setup
+    - packages
 
 - name: Remove unneeded packages
   ansible.builtin.apt:
@@ -66,8 +123,10 @@
       - xauth
       - '*v4l*'
       - triggerhappy
+      - network-manager
     state: absent
     autoremove: true
     purge: true
   tags:
     - tpi1-setup
+    - packages

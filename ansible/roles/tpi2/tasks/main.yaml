@@ -126,6 +126,7 @@
       - bridge-utils
       - cloud-image-utils
       - chrony
+      - cloud-init
     state: present
   tags:
     - tpi2-setup
