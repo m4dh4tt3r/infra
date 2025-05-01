@@ -10,16 +10,16 @@ resource "libvirt_cloudinit_disk" "test_ci" {
   name     = "${var.test_name}-ci.iso"
   pool     = libvirt_pool.vm_pool.name
 
-  user_data = templatefile("${path.module}/cloud_init.tpl", {
+  user_data = templatefile("${path.module}/../cloud-init/user-data.tpl", {
     hostname = var.test_name
     fqdn     = "${var.test_name}.${var.domain}"
   })
 
-  meta_data = templatefile("${path.module}/meta_data.tpl", {
+  meta_data = templatefile("${path.module}/../cloud-init/meta-data.tpl", {
     hostname = var.test_name
   })
 
-  network_config = templatefile("${path.module}/network_config.tpl", {
+  network_config = templatefile("${path.module}/../cloud-init/network-config.tpl", {
     interface = var.interface
   })
 }
@@ -63,7 +63,7 @@ resource "libvirt_domain" "test_vm" {
 
   cloudinit = libvirt_cloudinit_disk.test_ci.id
   xml {
-    xslt = file("${path.module}/transforms.xsl")
+    xslt = file("${path.module}/files/transforms.xsl")
   }
 
 
