@@ -1,0 +1,34 @@
+---
+- name: Install and Configure Druid
+  hosts: tag_druid
+  become: true
+  tasks:
+    - name: Install dependencies
+      ansible.builtin.package:
+        name:
+          - openjdk-17-jdk
+          - unzip
+          - wget
+          - nginx
+        state: present
+        update_cache: yes
+
+    - name: Install and configure Druid
+      block:
+      - name: Create druid user
+        ansible.builtin.user:
+          name: druid
+          shell: /bin/bash
+          createhome: yes
+
+      - name: Download Apache Druid
+        ansible.builtin.get_url:
+          url: "https://www.apache.org/dyn/closer.cgi?path=/druid/{{ druid_version }}/apache-druid-{{ druid_version }}-bin.tar.gz"
+          dest: /tmp/apache-druid.tar.gz
+
+      - name: Extract Druid
+        ansible.builtin.unarchive:
+          src: "/tmp/apache-druid.tar.gz"
+          dest: "/opt"
+          remote_src: true
+    

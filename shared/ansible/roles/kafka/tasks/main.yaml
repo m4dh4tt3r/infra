@@ -1,0 +1,37 @@
+---
+- name: Install and configure Kafka in KRaft mode
+  when: "'kafka_nodes' in group_names"
+  block:
+    - name: Install dependencies
+      package:
+        name:
+          - openjdk-17-jdk
+          - unzip
+          - wget
+          - openssl
+        state: present
+        update_cache: yes
+
+    - name: Download Kafka
+      get_url:
+        url: "https://dlcdn.apache.org/kafka/{{ kafka_version }}/kafka_2.13-{{ kafka_version }}.tgz"
+        dest: /tmp/kafka.tgz
+
+    - name: Extract Kafka
+      unarchive:
+        src: "/tmp/kafka.tgz"
+        dest: "/opt/"
+        remote_src: yes
+
+    - name: Configure TLS for Kafka
+      copy:
+        src: "{{ item }}"
+        dest: "{{ cert_dir }}/"
+      with_items:
+        - kafka.crt
+        - kafka.key
+
+    - name: Configure Kafka in KRaft Mode
+      template:
+        src: kraft_tls.server.properties.j2
+        dest: "{{ kafka_dir }}/config/kraft/server.properties"

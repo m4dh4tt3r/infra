@@ -1,0 +1,20 @@
+# Kafka KRaft Configuration
+process.roles=controller,broker
+node.id={{ ansible_host.split('.')[-1] }}
+controller.quorum.voters=1@{{ groups['kafka_nodes'][0] }}:9093,2@{{ groups['kafka_nodes'][1] }}:9093,3@{{ groups['kafka_nodes'][2] }}:9093
+log.dirs=/tmp/kraft-logs
+
+# TLS Settings
+listeners=SSL://{{ ansible_host }}:9092,CONTROLLER://{{ ansible_host }}:9093
+advertised.listeners=SSL://{{ ansible_host }}:9092
+inter.broker.listener.name=SSL
+controller.listener.names=CONTROLLER
+
+ssl.keystore.location={{ cert_dir }}/kafka.jks
+ssl.keystore.password=kafka-secure-pass
+ssl.truststore.location={{ cert_dir }}/kafka.jks
+ssl.truststore.password=kafka-secure-pass
+
+# IAM Authentication
+sasl.enabled.mechanisms=AWS_MSK_IAM
+sasl.mechanism.inter.broker.protocol=AWS_MSK_IAM
